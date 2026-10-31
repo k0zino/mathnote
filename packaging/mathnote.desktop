@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=MathNote
+GenericName=Math Notebook
+Comment=手写数学笔记，圈选即问 AI
+Exec=mathnote %U
+Icon=mathnote
+Terminal=false
+Categories=Education;Office;
+StartupWMClass=mathnote
+Keywords=math;notes;handwriting;latex;ai;

@@ -1,0 +1,15 @@
+# Maintainer: MathNote
+pkgname=mathnote
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Handwritten math notebook with lasso-to-AI"
+arch=('x86_64')
+depends=('electron44')
+options=('!strip' '!debug')
+source=()
+sha256sums=()
+
+package() {
+  cp -a "$startdir/stage/." "$pkgdir/"
+  chmod 755 "$pkgdir/usr/bin/mathnote"
+}

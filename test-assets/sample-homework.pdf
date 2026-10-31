@@ -1,0 +1,54 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+2 0 obj
+<< /Length 344 >>
+stream
+BT /F1 20 Tf 60 780 Td (Math Homework - Page 1) Tj ET
+BT /F1 13 Tf 60 730 Td (1. Let f\(x\) = x^2 sin\(x\). Find the derivative f'\(x\).) Tj ET
+BT /F1 13 Tf 60 690 Td (2. Evaluate the integral of x * exp\(x\) dx.) Tj ET
+BT /F1 13 Tf 60 650 Td (3. Prove that sqrt\(2\) is irrational.) Tj ET
+0.75 w 60 610 m 535 610 l S
+0.3 w 60 590 m 535 590 l S
+endstream
+endobj
+3 0 obj
+<< /Length 336 >>
+stream
+BT /F1 20 Tf 60 780 Td (Math Homework - Page 2) Tj ET
+BT /F1 13 Tf 60 730 Td (4. Solve dy/dx = y * \(1 - y\), y\(0\) = 2.) Tj ET
+BT /F1 13 Tf 60 690 Td (5. Find the limit of sin\(3x\) / x as x -> 0.) Tj ET
+BT /F1 13 Tf 60 650 Td (6. Compute the determinant of [[1,2],[3,4]].) Tj ET
+0.75 w 60 610 m 535 610 l S
+0.3 w 60 590 m 535 590 l S
+endstream
+endobj
+4 0 obj
+<< /Type /Page /Parent 6 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 1 0 R >> >> /Contents 2 0 R >>
+endobj
+5 0 obj
+<< /Type /Page /Parent 6 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 1 0 R >> >> /Contents 3 0 R >>
+endobj
+6 0 obj
+<< /Type /Pages /Kids [4 0 R 5 0 R] /Count 2 >>
+endobj
+7 0 obj
+<< /Type /Catalog /Pages 6 0 R >>
+endobj
+xref
+0 8
+0000000000 65535 f 
+0000000015 00000 n 
+0000000085 00000 n 
+0000000480 00000 n 
+0000000867 00000 n 
+0000000993 00000 n 
+0000001119 00000 n 
+0000001182 00000 n 
+trailer
+<< /Size 8 /Root 7 0 R >>
+startxref
+1231
+%%EOF

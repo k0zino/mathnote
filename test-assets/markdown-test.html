@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Markdown LaTeX test</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module">
+      import { createElement } from 'react'
+      import { createRoot } from 'react-dom/client'
+      import { Markdown } from '/src/ui/Markdown.tsx'
+
+      const text = [
+        '这是一个求和符号 \\(\\sum_{n=1}^{\\infty}\\)。',
+        '',
+        '\\[\\sum_{n=1}^{\\infty} \\frac{1}{n^2} = \\frac{\\pi^2}{6}\\]',
+        '',
+        '代码里的 \\(x\\) 不应被转换：`\\(x\\)`',
+      ].join('\n')
+
+      createRoot(document.getElementById('root')).render(
+        createElement(Markdown, null, text),
+      )
+    </script>
+  </body>
+</html>

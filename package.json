@@ -1,0 +1,37 @@
+{
+  "name": "mathnote",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit",
+    "test:ai": "node scripts/test-ai.cjs",
+    "test:latex": "node scripts/test-latex.mjs",
+    "test:ink": "node scripts/test-ink.mjs",
+    "test:android-core": "bash android/core/test.sh",
+    "package:pacman": "bash scripts/package-pacman.sh",
+    "start": "electron ."
+  },
+  "dependencies": {
+    "fflate": "^0.8.3",
+    "katex": "^0.19.1",
+    "lucide-react": "^1.64.0",
+    "pdfjs-dist": "^6.4.299",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-markdown": "^10.1.0",
+    "rehype-katex": "^7.0.1",
+    "remark-gfm": "^4.0.1",
+    "remark-math": "^6.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "electron": "^44.7.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5"
+  }
+}
