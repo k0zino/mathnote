@@ -53,6 +53,9 @@ export class InkEngine {
   private zoom = 1
   private baseWidth = PAGE_WIDTH
   private baseHeight = PAGE_HEIGHT
+  private infinite = false
+  private cameraX = 0
+  private cameraY = 0
 
   private drawing = false
   private current: Stroke | null = null
@@ -140,6 +143,24 @@ export class InkEngine {
 
   resize(): void {
     const dpr = window.devicePixelRatio || 1
+
+    if (this.infinite) {
+      const cssW = Math.max(1, this.page.clientWidth)
+      const cssH = Math.max(1, this.page.clientHeight)
+
+      for (const canvas of [this.committed, this.live, this.overlay]) {
+        canvas.width = Math.max(1, Math.round(cssW * dpr))
+        canvas.height = Math.max(1, Math.round(cssH * dpr))
+      }
+
+      this.applyTransform(dpr)
+      this.clearLive()
+      this.clearOverlay()
+      this.redrawAll()
+      this.updateGrid()
+      return
+    }
+
     const cssW = this.baseWidth * this.zoom
     const cssH = this.baseHeight * this.zoom
 
@@ -151,16 +172,112 @@ export class InkEngine {
       canvas.height = Math.max(1, Math.round(cssH * dpr))
     }
 
-    const scale = this.zoom * dpr
-    for (const ctx of [this.committedCtx, this.liveCtx, this.overlayCtx]) {
-      ctx.setTransform(scale, 0, 0, scale, 0, 0)
-      ctx.lineCap = 'round'
-      ctx.lineJoin = 'round'
-    }
-
+    this.applyTransform(dpr)
     this.clearLive()
     this.clearOverlay()
     this.redrawAll()
+  }
+
+  private applyTransform(dpr = window.devicePixelRatio || 1): void {
+    const scale = this.zoom * dpr
+    const offsetX = this.infinite ? -this.cameraX * scale : 0
+    const offsetY = this.infinite ? -this.cameraY * scale : 0
+
+    for (const ctx of [this.committedCtx, this.liveCtx, this.overlayCtx]) {
+      ctx.setTransform(scale, 0, 0, scale, offsetX, offsetY)
+      ctx.lineCap = 'round'
+      ctx.lineJoin = 'round'
+    }
+  }
+
+  private updateGrid(): void {
+    if (!this.infinite) return
+    const size = 24 * this.zoom
+    this.page.style.backgroundSize = `${size}px ${size}px`
+    this.page.style.backgroundPosition = `${-this.cameraX * this.zoom}px ${
+      -this.cameraY * this.zoom
+    }px`
+  }
+
+  setInfinite(enabled: boolean): void {
+    if (this.infinite === enabled) return
+    this.infinite = enabled
+    this.cameraX = 0
+    this.cameraY = 0
+    this.resize()
+    if (enabled) this.centerContent()
+  }
+
+  isInfinite(): boolean {
+    return this.infinite
+  }
+
+  panBy(dx: number, dy: number): void {
+    if (!this.infinite) return
+    this.cameraX += dx / this.zoom
+    this.cameraY += dy / this.zoom
+    this.applyTransform()
+    this.redrawAll()
+    this.clearLive()
+    this.clearOverlay()
+    this.updateGrid()
+  }
+
+  zoomAt(clientX: number, clientY: number, zoom: number): void {
+    const next = clamp(zoom, 0.2, 3)
+    if (!this.infinite) {
+      this.setZoom(next)
+      return
+    }
+
+    const rect = this.page.getBoundingClientRect()
+    const screenX = clientX - rect.left
+    const screenY = clientY - rect.top
+    const worldX = screenX / this.zoom + this.cameraX
+    const worldY = screenY / this.zoom + this.cameraY
+
+    this.zoom = next
+    this.cameraX = worldX - screenX / next
+    this.cameraY = worldY - screenY / next
+    this.resize()
+  }
+
+  resetInfiniteView(): void {
+    if (!this.infinite) return
+    this.zoom = 1
+    this.centerContent()
+  }
+
+  private centerContent(): void {
+    if (!this.infinite) return
+    const rect = this.page.getBoundingClientRect()
+    let minX = Infinity
+    let minY = Infinity
+    let maxX = -Infinity
+    let maxY = -Infinity
+
+    for (const stroke of this.strokes) {
+      for (const point of stroke.points) {
+        if (point.x < minX) minX = point.x
+        if (point.y < minY) minY = point.y
+        if (point.x > maxX) maxX = point.x
+        if (point.y > maxY) maxY = point.y
+      }
+    }
+
+    if (Number.isFinite(minX)) {
+      this.cameraX = (minX + maxX) / 2 - rect.width / (2 * this.zoom)
+      this.cameraY = (minY + maxY) / 2 - rect.height / (2 * this.zoom)
+    } else {
+      this.cameraX = -rect.width / (2 * this.zoom)
+      this.cameraY = -rect.height / (2 * this.zoom)
+    }
+
+    this.applyTransform()
+    this.redrawAll()
+    this.clearLive()
+    this.clearOverlay()
+    this.updateGrid()
   }
 
   setZoom(zoom: number): void {
@@ -236,6 +353,7 @@ export class InkEngine {
     this.strokes = strokes.slice()
     this.undoStack = []
     this.resize()
+    if (this.infinite) this.centerContent()
   }
 
   undo(): void {
@@ -419,8 +537,8 @@ export class InkEngine {
     }
 
     return {
-      x: (e.clientX - rect.left) / this.zoom,
-      y: (e.clientY - rect.top) / this.zoom,
+      x: (e.clientX - rect.left) / this.zoom + (this.infinite ? this.cameraX : 0),
+      y: (e.clientY - rect.top) / this.zoom + (this.infinite ? this.cameraY : 0),
       p,
       t: e.timeStamp,
     }
@@ -554,10 +672,14 @@ export class InkEngine {
     this.clearOverlay()
     if (!rect || rect.w < 4 || rect.h < 4) return
 
-    const x = Math.max(0, rect.x - SELECT_PADDING)
-    const y = Math.max(0, rect.y - SELECT_PADDING)
-    const w = Math.min(this.baseWidth - x, rect.w + SELECT_PADDING * 2)
-    const h = Math.min(this.baseHeight - y, rect.h + SELECT_PADDING * 2)
+    const x = this.infinite ? rect.x - SELECT_PADDING : Math.max(0, rect.x - SELECT_PADDING)
+    const y = this.infinite ? rect.y - SELECT_PADDING : Math.max(0, rect.y - SELECT_PADDING)
+    const w = this.infinite
+      ? rect.w + SELECT_PADDING * 2
+      : Math.min(this.baseWidth - x, rect.w + SELECT_PADDING * 2)
+    const h = this.infinite
+      ? rect.h + SELECT_PADDING * 2
+      : Math.min(this.baseHeight - y, rect.h + SELECT_PADDING * 2)
 
     this.onSelection?.({ rect: { x, y, w, h }, polygon })
   }

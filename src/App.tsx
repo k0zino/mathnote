@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus, ZoomIn, ZoomOut } from 'lucide-react'
 import { InkEngine, type Stats } from './ink/engine'
 import type { Selection, StrokeTool, Tool } from './ink/types'
 import {
@@ -140,6 +140,7 @@ export default function App() {
 
   const pageLayout = buildPageLayout(pagesRef.current, zoom)
   pageLayoutRef.current = pageLayout
+  const currentInfinite = pagesRef.current[pageIndex]?.infinite ?? false
 
   function markDirty() {
     dirtyRef.current = true
@@ -224,6 +225,7 @@ export default function App() {
     if (page.infinite) {
       userZoomedRef.current = false
       setZoom(1)
+      engineRef.current?.resetInfiniteView()
       return
     }
 
@@ -235,6 +237,8 @@ export default function App() {
   }
 
   function revealPage(index: number, center = false) {
+    const targetPage = pagesRef.current[index]
+    if (targetPage?.infinite) return
     let tries = 0
 
     const apply = () => {
@@ -282,9 +286,25 @@ export default function App() {
 
   function setManualZoom(next: number) {
     userZoomedRef.current = true
-    const maxZoom = pagesRef.current[pageIndexRef.current]?.infinite ? 1.5 : 3
-    setZoom(Math.min(maxZoom, Math.max(0.2, Math.round(next * 10) / 10)))
-    requestReveal(pageIndexRef.current, pagesRef.current[pageIndexRef.current]?.infinite)
+    const page = pagesRef.current[pageIndexRef.current]
+    const maxZoom = page?.infinite ? 1.5 : 3
+    const target = Math.min(maxZoom, Math.max(0.2, Math.round(next * 10) / 10))
+
+    if (page?.infinite) {
+      const rect = pageRef.current?.getBoundingClientRect()
+      if (rect) {
+        engineRef.current?.zoomAt(
+          rect.left + rect.width / 2,
+          rect.top + rect.height / 2,
+          target,
+        )
+      }
+      setZoom(target)
+      return
+    }
+
+    setZoom(target)
+    requestReveal(pageIndexRef.current, false)
   }
 
   function requestReveal(index: number, center = false) {
@@ -322,6 +342,7 @@ export default function App() {
       overlay: overlayRef.current!,
     })
     engineRef.current = engine
+    engine.setInfinite(currentInfinite)
 
     engine.onChange = () => {
       flushCurrentPage()
@@ -346,7 +367,7 @@ export default function App() {
       engine.dispose()
       engineRef.current = null
     }
-  }, [])
+  }, [currentInfinite])
 
   useEffect(() => {
     engineRef.current?.setTool(tool)
@@ -409,20 +430,42 @@ export default function App() {
     if (!scroll) return
 
     const onWheel = (event: WheelEvent) => {
+      const current = pagesRef.current[pageIndexRef.current]
+      const engine = engineRef.current
+      if (!current || !engine) return
+
+      if (current.infinite) {
+        event.preventDefault()
+        if (engine.isInteracting()) return
+
+        if (event.ctrlKey || event.metaKey) {
+          const previous = zoomRef.current
+          const factor = Math.exp(-event.deltaY * 0.0015)
+          const next = Math.min(
+            1.5,
+            Math.max(0.2, Math.round(previous * factor * 100) / 100),
+          )
+          if (next === previous) return
+          userZoomedRef.current = true
+          engine.zoomAt(event.clientX, event.clientY, next)
+          setZoom(next)
+          return
+        }
+
+        engine.panBy(event.deltaX, event.deltaY)
+        userZoomedRef.current = true
+        return
+      }
+
       if (!event.ctrlKey && !event.metaKey) return
       event.preventDefault()
 
       const page = pageRef.current
-      const engine = engineRef.current
-      if (!page || !engine) return
+      if (!page) return
 
       const previous = zoomRef.current
       const factor = Math.exp(-event.deltaY * 0.0015)
-      const maxZoom = pagesRef.current[pageIndexRef.current]?.infinite ? 1.5 : 3
-      const next = Math.min(
-        maxZoom,
-        Math.max(0.2, Math.round(previous * factor * 100) / 100),
-      )
+      const next = Math.min(3, Math.max(0.2, Math.round(previous * factor * 100) / 100))
       if (next === previous) return
 
       const scrollRect = scroll.getBoundingClientRect()
@@ -452,7 +495,7 @@ export default function App() {
 
     scroll.addEventListener('wheel', onWheel, { passive: false })
     return () => scroll.removeEventListener('wheel', onWheel)
-  }, [])
+  }, [currentInfinite])
 
   // 连续滚动：视口中心落到哪一页，就把哪一页设为活动页
   function handleScroll() {
@@ -482,7 +525,7 @@ export default function App() {
     if (!page?.infinite) return
     userZoomedRef.current = false
     setZoom(1)
-    requestReveal(pageIndexRef.current, true)
+    engineRef.current?.resetInfiniteView()
   }, [view, pageIndex])
 
   useEffect(() => () => window.clearTimeout(noticeTimerRef.current), [])
@@ -944,63 +987,89 @@ export default function App() {
             onClear={() => engineRef.current?.clear()}
           />
 
-          <div className="pages-scroll" ref={scrollRef} onScroll={handleScroll}>
-            <div
-              className="pages-stack"
-              style={{ width: pageLayout.width, height: pageLayout.height }}
-            >
-              {pagesRef.current.map((page, index) => {
-                const item = pageLayout.items[index]
-                if (!item) return null
-                return (
-                  <div
-                    key={page.id}
-                    className={`page-sheet ${page.infinite ? 'infinite' : ''}`}
-                    style={{
-                      top: item.top,
-                      left: item.left,
-                      width: item.width,
-                      height: item.height,
-                    }}
-                  >
-                    {index !== pageIndex && (
-                      <PagePreview
-                        page={page}
-                        pdf={getPdfForPage(page)}
-                        zoom={zoom}
-                        version={pageVersion}
-                        scrollRoot={scrollRef}
-                      />
-                    )}
-                  </div>
-                )
-              })}
-
-              <div
-                id="page"
-                ref={pageRef}
-                className={currentPage.infinite ? 'infinite' : ''}
-                style={{
-                  top: activeLayout.top,
-                  left: activeLayout.left,
-                  width: activeLayout.width,
-                  height: activeLayout.height,
-                }}
-              >
-                {currentPage.background?.type === 'pdf' && (
-                  <PdfBackground
-                    key={currentPage.id}
-                    page={currentPage}
-                    pdf={getPdfForPage(currentPage)}
-                    zoom={zoom}
-                  />
-                )}
-                <canvas ref={committedRef} />
-                <canvas ref={liveRef} />
-                <canvas ref={overlayRef} className="overlay" />
+          {currentPage.infinite ? (
+            <div className="pages-scroll infinite-scroll" ref={scrollRef}>
+              <div className="infinite-stage">
+                <div id="page" ref={pageRef} className="infinite">
+                  <canvas ref={committedRef} />
+                  <canvas ref={liveRef} />
+                  <canvas ref={overlayRef} className="overlay" />
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="pages-scroll" ref={scrollRef} onScroll={handleScroll}>
+              <div
+                className="pages-stack"
+                style={{ width: pageLayout.width, height: pageLayout.height }}
+              >
+                {pagesRef.current.map((page, index) => {
+                  const item = pageLayout.items[index]
+                  if (!item) return null
+                  return (
+                    <div
+                      key={page.id}
+                      className={`page-sheet ${page.infinite ? 'infinite' : ''}`}
+                      style={{
+                        top: item.top,
+                        left: item.left,
+                        width: item.width,
+                        height: item.height,
+                      }}
+                    >
+                      {index !== pageIndex && (
+                        <PagePreview
+                          page={page}
+                          pdf={getPdfForPage(page)}
+                          zoom={zoom}
+                          version={pageVersion}
+                          scrollRoot={scrollRef}
+                        />
+                      )}
+                    </div>
+                  )
+                })}
+
+                <div
+                  id="page"
+                  ref={pageRef}
+                  style={{
+                    top: activeLayout.top,
+                    left: activeLayout.left,
+                    width: activeLayout.width,
+                    height: activeLayout.height,
+                  }}
+                >
+                  {currentPage.background?.type === 'pdf' && (
+                    <PdfBackground
+                      key={currentPage.id}
+                      page={currentPage}
+                      pdf={getPdfForPage(currentPage)}
+                      zoom={zoom}
+                    />
+                  )}
+                  <canvas ref={committedRef} />
+                  <canvas ref={liveRef} />
+                  <canvas ref={overlayRef} className="overlay" />
+                </div>
+
+                <button
+                  className="add-page-inline"
+                  style={{
+                    top:
+                      (pageLayout.items[pageLayout.items.length - 1]?.top ?? 0) +
+                      (pageLayout.items[pageLayout.items.length - 1]?.height ?? 0) +
+                      10,
+                  }}
+                  onClick={addPage}
+                  title="在当前页面后添加一页"
+                >
+                  <Plus size={16} />
+                  添加页面
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className="statusbar">
             {!currentPage.infinite && (
