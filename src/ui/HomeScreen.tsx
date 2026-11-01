@@ -1,8 +1,8 @@
 import {
-  Clock,
   FilePlus,
   FileText,
   FolderOpen,
+  House,
   Infinity as InfinityIcon,
   Palette,
   Settings,
@@ -30,14 +30,9 @@ function orientationLabel(orientation: PaperMode): string {
 
 export function HomeScreen(props: HomeScreenProps) {
   const mainRef = useRef<HTMLElement>(null)
-  const recentRef = useRef<HTMLElement>(null)
 
   const scrollToTop = () => {
     mainRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
-  }
-
-  const scrollToRecent = () => {
-    recentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
   return (
@@ -45,12 +40,8 @@ export function HomeScreen(props: HomeScreenProps) {
       <aside className="home-nav">
         <div className="home-nav-label">文件</div>
         <button className="active" onClick={scrollToTop}>
-          <FileText size={15} />
-          新建
-        </button>
-        <button onClick={scrollToRecent}>
-          <Clock size={15} />
-          最近
+          <House size={15} />
+          开始
         </button>
         <button onClick={props.onOpenFile}>
           <FolderOpen size={15} />
@@ -118,7 +109,7 @@ export function HomeScreen(props: HomeScreenProps) {
             </button>
           </div>
 
-          <section className="recent-section" ref={recentRef}>
+          <section className="recent-section">
             <div className="recent-section-head">
               <h2>最近</h2>
               <span>{props.recents.length} 个文件</span>
