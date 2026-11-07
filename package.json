@@ -13,6 +13,7 @@
     "test:ink": "node scripts/test-ink.mjs",
     "test:android-core": "bash android/core/test.sh",
     "package:pacman": "bash scripts/package-pacman.sh",
+    "package:win": "npm run build && electron-builder --win portable --x64",
     "start": "electron ."
   },
   "dependencies": {
@@ -31,7 +32,33 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "electron": "^44.7.0",
+    "electron-builder": "^26.18.0",
     "typescript": "^7.0.2",
     "vite": "^8.3.5"
+  },
+  "build": {
+    "appId": "io.github.k0zino.mathnote",
+    "productName": "MathNote",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*"
+    ],
+    "win": {
+      "icon": "packaging/icon.png",
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "portable": {
+      "artifactName": "MathNote-${version}-win-x64.${ext}"
+    }
   }
 }
