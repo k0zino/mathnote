@@ -56,8 +56,14 @@ export function AiPanel(props: AiPanelProps) {
   const cancelRef = useRef<(() => void) | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const sessionRef = useRef<string>(crypto.randomUUID())
 
   useEffect(() => () => cancelRef.current?.(), [])
+
+  useEffect(() => {
+    if (!props.visible) setExpanded(false)
+  }, [props.visible])
+
 
   useEffect(() => {
     const el = scrollRef.current
@@ -73,6 +79,7 @@ export function AiPanel(props: AiPanelProps) {
   function clearChat() {
     stop()
     setMessages([])
+    sessionRef.current = crypto.randomUUID()
   }
 
   function send(preset?: string) {
@@ -107,6 +114,7 @@ export function AiPanel(props: AiPanelProps) {
     const request: ChatRequest = {
       settings: props.settings,
       system: SYSTEM_PROMPT,
+      sessionId: sessionRef.current,
       messages: history.map((m) => ({
         role: m.role,
         content: m.content,
@@ -170,7 +178,7 @@ export function AiPanel(props: AiPanelProps) {
           >
             {expanded ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
           </button>
-          <button title="AI 设置" onClick={props.onOpenSettings}>
+          <button title="设置" onClick={props.onOpenSettings}>
             <Settings2 size={15} />
           </button>
           <button title="清空对话" onClick={clearChat}>

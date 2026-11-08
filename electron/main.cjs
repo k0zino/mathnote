@@ -1,8 +1,12 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron')
+const { app, BrowserWindow, ipcMain, dialog, nativeTheme } = require('electron')
 const path = require('node:path')
 const fs = require('node:fs/promises')
 const { getSettings, setSettings } = require('./settings.cjs')
 const { streamChat } = require('./ai.cjs')
+
+// 应用是浅色 UI：同步 Chromium 原生控件/颜色提供器为浅色，
+// 否则系统深色模式下 WCO 按钮的悬停底色会是白色，在白色标题栏上不可见。
+nativeTheme.themeSource = 'light'
 
 const devUrl = process.env.VITE_DEV_SERVER_URL
 const activeChats = new Map()
@@ -16,13 +20,14 @@ function createWindow() {
     minWidth: 1000,
     minHeight: 640,
     title: 'MathNote',
-    // 自绘标题栏内容，但窗口按钮仍由桌面环境绘制（Window Controls Overlay）
+    // 自绘标题栏内容，窗口按钮由系统绘制（Window Controls Overlay）
     titleBarStyle: 'hidden',
     ...(process.platform === 'darwin'
       ? {}
       : {
           titleBarOverlay: {
-            color: '#ffffff00',
+            // 不透明背景色：系统据此计算最小化/最大化的悬停底色
+            color: '#ffffff',
             symbolColor: '#3a3f46',
             height: 40,
           },

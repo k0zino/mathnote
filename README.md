@@ -20,6 +20,7 @@
 - 撤销、清空、适应宽度缩放
 - `Ctrl/⌘ + 滚轮`以鼠标位置为锚点缩放
 - 自绘标题栏 + Window Controls Overlay：窗口按钮交给桌面环境，圆角由客户端装饰负责
+- 左右侧栏、AI 面板和弹窗带展开 / 收起动画，可在设置里一键关闭
 
 **PDF 作业**
 
@@ -38,7 +39,7 @@
 - Markdown + KaTeX 渲染，流式输出，可停止、复制原文
 - 自动兼容模型混用的 `\(...\)` / `\[...\]` / `$...$` / `$$...$$` 定界符，并展开成正确的 display block
 - 提示词预设、图片缩略图管理、面板最大化
-- 供应商预设：OpenAI、Anthropic、DeepSeek、Kimi、智谱 GLM、通义千问、硅基流动、OpenRouter、Gemini、Ollama、自定义
+- 供应商预设：DeepSeek（默认）、OpenCode Go、OpenAI、Anthropic、Kimi、智谱 GLM、通义千问、硅基流动、火山方舟、百度千帆、腾讯混元、MiniMax、阶跃星辰、零一万物、魔搭、OpenRouter、Gemini、xAI、Mistral、Groq、Together、Ollama、LM Studio、自定义
 - OpenAI 兼容协议（DeepSeek / Kimi / 本地 vLLM / Ollama 等）+ Anthropic
 - API 请求全部在主进程发出，密钥优先用系统密钥链加密保存
 
@@ -102,9 +103,10 @@ npm run test:ink   # 验证笔刷压感与荧光笔形状
 
 右上角齿轮 → 选供应商，Base URL / 模型会自动填好，再填 API Key。
 
-- 预设覆盖 OpenAI、Anthropic、DeepSeek、Kimi、智谱 GLM、通义千问、硅基流动、OpenRouter、Gemini、Ollama、自定义。
+- 预设覆盖 OpenAI、Anthropic、DeepSeek（默认）、OpenCode Go、Kimi、智谱 GLM、通义千问、硅基流动、火山方舟、百度千帆、腾讯混元、MiniMax、阶跃星辰、零一万物、魔搭、OpenRouter、Gemini、xAI、Mistral、Groq、Together、Ollama、LM Studio、自定义。
 - **必须使用支持图片输入的多模态模型**，否则看不懂手写截图；设置里会标出每个预设的视觉能力。
-- DeepSeek 官方 API 的图片支持随版本变化，发截图报错时改用 OpenRouter / 硅基流动里的 VL 模型。
+- DeepSeek 官方 API 的图片支持随版本变化，发截图报错时改用 OpenCode Go / OpenRouter / 硅基流动里的 VL 模型。
+- OpenCode Go 使用 `https://opencode.ai/inference/go/openai/v1`，应用会自动附带 `x-opencode-session` 会话头与 MathNote 的 User-Agent。
 - Ollama 等本地服务可以留空 API Key。
 
 ## 打包 pacman

@@ -69,6 +69,7 @@ interface PageSidebarProps {
   pages: PageData[]
   current: number
   version: number
+  hidden?: boolean
   getPdf: (page: PageData) => PdfSource | undefined
   onSelect: (index: number) => void
   onAdd: () => void
@@ -77,7 +78,10 @@ interface PageSidebarProps {
 
 export function PageSidebar(props: PageSidebarProps) {
   return (
-    <aside className="sidebar">
+    <aside
+      className={`sidebar ${props.hidden ? 'is-collapsed' : ''}`}
+      aria-hidden={props.hidden || undefined}
+    >
       <div className="sidebar-head">
         <span>页面</span>
         <span className="count">{props.pages.length}</span>

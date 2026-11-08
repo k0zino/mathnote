@@ -7,10 +7,10 @@ export interface AiSettings {
 }
 
 export const DEFAULT_SETTINGS: AiSettings = {
-  presetId: 'openai',
+  presetId: 'deepseek',
   provider: 'openai',
-  baseUrl: 'https://api.openai.com/v1',
-  model: 'gpt-4o',
+  baseUrl: 'https://api.deepseek.com/v1',
+  model: 'deepseek-chat',
   apiKey: '',
 }
 
@@ -29,6 +29,8 @@ export interface ChatRequest {
   settings: AiSettings
   messages: ChatInputMessage[]
   system: string
+  /** 会话级稳定 ID，OpenCode Go 通过 x-opencode-session 头做路由与缓存 */
+  sessionId?: string
 }
 
 export interface ChatHandlers {

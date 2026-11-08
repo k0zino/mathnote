@@ -31,6 +31,7 @@ import { AppearanceDialog } from './ui/AppearanceDialog'
 import { HomeScreen } from './ui/HomeScreen'
 import { LeaveDialog } from './ui/LeaveDialog'
 import { Hud } from './ui/Hud'
+import { Presence } from './ui/Presence'
 
 const PAGE_GAP = 26
 const PAGE_PAD_X = 44
@@ -394,11 +395,6 @@ export default function App() {
   }, [zoom])
 
   useEffect(() => {
-    if (!userZoomedRef.current) fitWorkspace()
-    requestReveal(pageIndexRef.current, pagesRef.current[pageIndexRef.current]?.infinite)
-  }, [sidebarOpen, aiOpen])
-
-  useEffect(() => {
     if (view !== 'editor') return
     const frame = requestAnimationFrame(() => {
       engineRef.current?.resize()
@@ -412,16 +408,33 @@ export default function App() {
   }, [view])
 
   useEffect(() => {
-    const onResize = () => {
-      engineRef.current?.resize()
-      if (!userZoomedRef.current) fitWorkspace()
-      requestReveal(
-        pageIndexRef.current,
-        pagesRef.current[pageIndexRef.current]?.infinite,
-      )
+    const workspace = workspaceRef.current
+    if (!workspace) return
+
+    // 侧栏展开/收起会连续改变工作区宽度：先逐帧重设画布，
+    // 等尺寸稳定后再自适应缩放，避免跟动画抢布局。
+    let frame = 0
+    let timer = 0
+    const observer = new ResizeObserver(() => {
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(() => engineRef.current?.resize())
+
+      window.clearTimeout(timer)
+      timer = window.setTimeout(() => {
+        if (!userZoomedRef.current) fitWorkspace()
+        requestReveal(
+          pageIndexRef.current,
+          pagesRef.current[pageIndexRef.current]?.infinite,
+        )
+      }, 260)
+    })
+    observer.observe(workspace)
+
+    return () => {
+      observer.disconnect()
+      cancelAnimationFrame(frame)
+      window.clearTimeout(timer)
     }
-    window.addEventListener('resize', onResize)
-    return () => window.removeEventListener('resize', onResize)
   }, [])
 
   // Ctrl/⌘ + 滚轮缩放，保持鼠标下的文档坐标不动
@@ -552,8 +565,11 @@ export default function App() {
       .catch(() => {})
   }, [])
 
-  async function saveSettings(next: AiSettings) {
+  async function saveSettings(next: AiSettings, animations: boolean) {
     setSettings(next)
+    setPrefs((prev) =>
+      prev.animations === animations ? prev : { ...prev, animations },
+    )
     setSettingsOpen(false)
     try {
       await backend()?.setSettings(next)
@@ -931,7 +947,11 @@ export default function App() {
   const platform = backend()?.platform ?? 'browser'
 
   return (
-    <div className={`app ${maximized ? 'maximized' : ''} platform-${platform}`}>
+    <div
+      className={`app ${maximized ? 'maximized' : ''} ${
+        prefs.animations ? '' : 'no-animations'
+      } platform-${platform}`}
+    >
       <TitleBar
         mode={view}
         docName={docName}
@@ -953,11 +973,12 @@ export default function App() {
       />
 
       <div className={`app-body ${view === 'home' ? 'is-hidden' : ''}`}>
-        {sidebarOpen && !currentPage.infinite && (
+        {!currentPage.infinite && (
           <PageSidebar
             pages={pagesRef.current}
             current={pageIndex}
-            version={pageVersion}
+            version={sidebarOpen ? pageVersion : 0}
+            hidden={!sidebarOpen}
             getPdf={getPdfForPage}
             onSelect={(index) => goToPage(index, true)}
             onAdd={addPage}
@@ -1181,29 +1202,30 @@ export default function App() {
         }}
       />
 
-      {settingsOpen && (
+      <Presence open={settingsOpen} duration={prefs.animations ? 180 : 0}>
         <SettingsDialog
           initial={settings}
+          animations={prefs.animations}
           onSave={saveSettings}
           onClose={() => setSettingsOpen(false)}
         />
-      )}
+      </Presence>
 
-      {themeOpen && (
+      <Presence open={themeOpen} duration={prefs.animations ? 180 : 0}>
         <AppearanceDialog
           themeColor={prefs.themeColor}
           onChange={(color) => setPrefs((prev) => ({ ...prev, themeColor: color }))}
           onClose={() => setThemeOpen(false)}
         />
-      )}
+      </Presence>
 
-      {leaveOpen && (
+      <Presence open={leaveOpen} duration={prefs.animations ? 180 : 0}>
         <LeaveDialog
           onSave={leaveAndSave}
           onDiscard={leaveAndDiscard}
           onCancel={() => setLeaveOpen(false)}
         />
-      )}
+      </Presence>
     </div>
   )
 }

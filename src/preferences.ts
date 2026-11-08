@@ -12,6 +12,7 @@ export interface RecentDocument {
 
 export interface AppPreferences {
   themeColor: string
+  animations: boolean
   brushes: Record<StrokeTool, ToolStyle>
   recents: RecentDocument[]
 }
@@ -23,6 +24,7 @@ const MAX_RECENTS = 12
 export function defaultPreferences(): AppPreferences {
   return {
     themeColor: DEFAULT_THEME,
+    animations: true,
     brushes: cloneToolStyles(),
     recents: [],
   }
@@ -67,6 +69,8 @@ export function loadPreferences(): AppPreferences {
     return {
       themeColor:
         typeof parsed.themeColor === 'string' ? parsed.themeColor : defaults.themeColor,
+      animations:
+        typeof parsed.animations === 'boolean' ? parsed.animations : defaults.animations,
       brushes,
       recents: recents.slice(0, MAX_RECENTS),
     }

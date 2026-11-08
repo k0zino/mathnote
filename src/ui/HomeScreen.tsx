@@ -60,7 +60,7 @@ export function HomeScreen(props: HomeScreenProps) {
         </button>
         <button onClick={props.onOpenSettings}>
           <Settings size={15} />
-          AI 设置
+          设置
         </button>
       </aside>
 

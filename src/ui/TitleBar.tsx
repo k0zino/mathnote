@@ -127,7 +127,7 @@ export function TitleBar(props: TitleBarProps) {
           <button className="tb-icon" onClick={props.onOpenAppearance} title="主题色">
             <Palette size={16} />
           </button>
-          <button className="tb-icon" onClick={props.onOpenSettings} title="AI 设置">
+          <button className="tb-icon" onClick={props.onOpenSettings} title="设置">
             <Settings size={16} />
           </button>
         </div>

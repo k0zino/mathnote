@@ -3,10 +3,10 @@ const path = require('node:path')
 const { app, safeStorage } = require('electron')
 
 const DEFAULTS = {
-  presetId: 'openai',
+  presetId: 'deepseek',
   provider: 'openai',
-  baseUrl: 'https://api.openai.com/v1',
-  model: 'gpt-4o',
+  baseUrl: 'https://api.deepseek.com/v1',
+  model: 'deepseek-chat',
   apiKey: '',
 }
 

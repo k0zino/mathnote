@@ -3,6 +3,45 @@
  * 目前支持 OpenAI 兼容协议（覆盖绝大多数云端和本地服务）与 Anthropic Messages。
  */
 
+const { randomUUID } = require('node:crypto')
+
+/** 没有会话 ID 时的兜底值，保证同一进程内稳定 */
+const fallbackSessionId = randomUUID()
+
+function baseHost(baseUrl) {
+  try {
+    return new URL(baseUrl).hostname.toLowerCase()
+  } catch {
+    return ''
+  }
+}
+
+function sessionHeaderValue(request) {
+  const raw = String(request.sessionId || fallbackSessionId)
+  const clean = raw.replace(/[^\w.-]/g, '').slice(0, 128)
+  return clean || fallbackSessionId
+}
+
+/** 某些服务要求客户端标识或会话头，按域名自动附加 */
+function clientHeaders(baseUrl, request) {
+  const host = baseHost(baseUrl)
+  const headers = {}
+
+  if (host === 'opencode.ai' || host.endsWith('.opencode.ai')) {
+    // OpenCode Go 从 2026-09 起要求稳定的会话头，并建议客户端使用自己的 UA
+    headers['user-agent'] = 'MathNote/0.1.0'
+    headers['x-opencode-client'] = 'mathnote'
+    headers['x-opencode-session'] = sessionHeaderValue(request)
+  }
+
+  if (host === 'openrouter.ai' || host.endsWith('.openrouter.ai')) {
+    headers['http-referer'] = 'https://github.com/k0zino/mathnote'
+    headers['x-title'] = 'MathNote'
+  }
+
+  return headers
+}
+
 function toOpenAIMessages(messages, system) {
   const out = []
   if (system) out.push({ role: 'system', content: system })
@@ -101,6 +140,7 @@ async function streamChat(request, { signal, onDelta }) {
   const { settings, messages, system } = request
   const baseUrl = String(settings.baseUrl || '').replace(/\/+$/, '')
   const local = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(?::|\/|$)/i.test(baseUrl)
+  const headers = clientHeaders(baseUrl, request)
 
   if (!settings.apiKey && !local) throw new Error('还没有配置 API Key，点右上角设置填写。')
   if (!baseUrl) throw new Error('还没有配置 Base URL。')
@@ -112,6 +152,7 @@ async function streamChat(request, { signal, onDelta }) {
       signal,
       headers: {
         'content-type': 'application/json',
+        ...headers,
         ...(settings.apiKey ? { 'x-api-key': settings.apiKey } : {}),
         'anthropic-version': '2023-06-01',
       },
@@ -141,6 +182,7 @@ async function streamChat(request, { signal, onDelta }) {
     signal,
     headers: {
       'content-type': 'application/json',
+      ...headers,
       ...(settings.apiKey ? { authorization: `Bearer ${settings.apiKey}` } : {}),
     },
     body: JSON.stringify({

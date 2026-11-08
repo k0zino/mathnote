@@ -39,6 +39,7 @@
   "build": {
     "appId": "io.github.k0zino.mathnote",
     "productName": "MathNote",
+    "electronDist": "node_modules/electron/dist",
     "directories": {
       "output": "release"
     },
